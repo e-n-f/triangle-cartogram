@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+while (<>) {
+	chomp;
+	($l1, $p1, $l2, $p2, $l3, $p3) = split(/ /);
+	($y[$l1], $x[$l1]) = split(/,/, $p1);
+	($y[$l2], $x[$l2]) = split(/,/, $p2);
+	($y[$l3], $x[$l3]) = split(/,/, $p3);
+
+	$neighbor{$l1}{$l2} = 1;
+	$neighbor{$l1}{$l3} = 1;
+	$neighbor{$l2}{$l1} = 1;
+	$neighbor{$l2}{$l3} = 1;
+	$neighbor{$l3}{$l1} = 1;
+	$neighbor{$l3}{$l1} = 1;
+}
+
+$xmax = $ymax = -999999;
+$xmin = $ymin = 999999;
+for ($i = 0; $i <= $#x; $i++) {
+	next unless defined($x[$i]);
+
+	if ($x[$i] > $xmax) { $xmax = $x[$i]; }
+	if ($y[$i] > $ymax) { $ymax = $y[$i]; }
+	if ($x[$i] < $xmin) { $xmin = $x[$i]; }
+	if ($y[$i] < $ymin) { $ymin = $y[$i]; }
+}
+
+print "0 setlinewidth\n";
+for ($i = 0; $i <= $#x; $i++) {
+	next unless defined($x[$i]);
+
+	for $k (keys (%{$neighbor{$i}})) {
+		printf("%.6f %.6f moveto %.6f %.6f lineto stroke\n",
+			($x[$i] - $xmin) * 612 / ($xmax - $xmin),
+			($y[$i] - $ymin) * 612 / ($ymax - $ymin),
+			($x[$k] - $xmin) * 612 / ($xmax - $xmin),
+			($y[$k] - $ymin) * 612 / ($ymax - $ymin));
+	}
+}
