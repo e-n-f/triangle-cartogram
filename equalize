@@ -127,9 +127,19 @@ for ($outer = 0; $outer < 100; $outer++) {
 			$count = 0;
 
 			for $k (keys (%{$neighbor{$i}})) {
-				$xsum += $x[$k];
-				$ysum += $y[$k];
-				$count++;
+				$dmin = 9999999;
+				for $k2 (keys (%{$neighbor{$k}})) {
+					$xd = $x[$k] - $x[$k2];
+					$yd = $y[$k] - $y[$k2];
+					$d = sqrt($xd * $xd + $yd * $yd);
+					if ($d < $dmin) {
+						$dmin = $d;
+					}
+				}
+
+				$xsum += $x[$k] * $dmin;
+				$ysum += $y[$k] * $dmin;
+				$count += 1 * $dmin;
 			}
 
 			# print "$i: $x[$i],$y[$i] has $count ";
