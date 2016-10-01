@@ -50,6 +50,7 @@ sub intersect {
 }
 
 for ($outer = 0; $outer < 100; $outer++) {
+	print STDERR "$outer  \r";
 	$xmax = $ymax = -999999;
 	$xmin = $ymin = 999999;
 	for ($i = 0; $i <= $#x; $i++) {
@@ -139,23 +140,33 @@ for ($outer = 0; $outer < 100; $outer++) {
 			$x[$i] = $xsum / $count;
 			$y[$i] = $ysum / $count;
 
-			OUTER:
-			for $k (keys (%{$neighbor{$i}})) {
-				for $k2 (keys (%{$neighbor{$i}})) {
-					for $k3 (keys (%{$neighbor{$k2}})) {
-						if ($k3 != $i) {
-							@int = intersect($x[$i], $y[$i], $x[$k], $y[$k],
-								$x[$k2], $y[$k2], $x[$k3], $y[$k3]);
+			$again = 1;
+			while ($again) {
+				$again = 0;
 
-							if ($#int >= 0) {
-								# print "intersects: $int[2], $int[3]: $x[$i],$y[$i], $x[$k],$y[$k] with $x[$k2],$y[$k2], $x[$k3],$y[$k3]\n";
-								$x[$i] = $wasx;
-								$y[$i] = $wasy;
-								last OUTER;
+				OUTER:
+				for $k (keys (%{$neighbor{$i}})) {
+					for $k2 (keys (%{$neighbor{$i}})) {
+					# for ($k2 = 0; $k2 <= $#x; $k2++) {
+						next unless defined $x[$k2];
+
+						for $k3 (keys (%{$neighbor{$k2}})) {
+							if ($k3 != $i) {
+								@int = intersect($x[$i], $y[$i], $x[$k], $y[$k],
+									$x[$k2], $y[$k2], $x[$k3], $y[$k3]);
+
+								if ($#int >= 0) {
+									# print STDERR "intersects: $int[2], $int[3]: $x[$i],$y[$i], $x[$k],$y[$k] with $x[$k2],$y[$k2], $x[$k3],$y[$k3]\n";
+									$x[$i] = ($wasx + $x[$i]) / 2;
+									$y[$i] = ($wasy + $y[$i]) / 2;
+									$again = 1;
+									last OUTER;
+								}
 							}
 						}
 					}
 				}
+
 			}
 
 			# print "to $x[$i],$y[$i]\n";
