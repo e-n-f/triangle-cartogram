@@ -74,10 +74,10 @@ for ($outer = 0; $outer < 100; $outer++) {
 
 			for $k (keys (%{$neighbor{$i}})) {
 				printf("%.6f %.6f moveto %.6f %.6f lineto stroke\n",
-					($x[$i] - $xmin) * 612 / ($xmax - $xmin),
-					($y[$i] - $ymin) * 612 / ($ymax - $ymin),
-					($x[$k] - $xmin) * 612 / ($xmax - $xmin),
-					($y[$k] - $ymin) * 612 / ($ymax - $ymin));
+					($x[$i] - $xmin) * 612 / $scale,
+					($y[$i] - $ymin) * 612 / $scale,
+					($x[$k] - $xmin) * 612 / $scale,
+					($y[$k] - $ymin) * 612 / $scale);
 			}
 		}
 		print "showpage\n";
@@ -167,9 +167,8 @@ for ($outer = 0; $outer < 100; $outer++) {
 
 								if ($#int >= 0) {
 									# print STDERR "intersects: $int[2], $int[3]: $x[$i],$y[$i], $x[$k],$y[$k] with $x[$k2],$y[$k2], $x[$k3],$y[$k3]\n";
-									$x[$i] = ($wasx + $x[$i]) / 2;
-									$y[$i] = ($wasy + $y[$i]) / 2;
-									$again = 1;
+									$x[$i] = $wasx;
+									$y[$i] = $wasy;
 									last OUTER;
 								}
 							}
