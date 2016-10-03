@@ -1,5 +1,17 @@
 #!/usr/bin/perl
 
+sub area {
+	my @t = @_;
+	my $n = $#t + 1;
+	my $area = 0;
+	for (my $i = 0; $i < $n; $i++) {
+		$area += $x[$t[$i]] * $y[$t[($i + 1 + $n) % $n]];
+		$area -= $y[$t[$i]] * $x[$t[($i + 1 + $n) % $n]];
+	}
+	$area /= 2;
+	return $area;
+}
+
 while (<>) {
 	chomp;
 	($l1, $p1, $l2, $p2, $l3, $p3) = split(/ /);
@@ -16,6 +28,10 @@ while (<>) {
 
 	@t = ( $l1, $l2, $l3 );
 	push @tris, [@t];
+
+	push @{$triangles_of{$l1}}, $#tris;
+	push @{$triangles_of{$l2}}, $#tris;
+	push @{$triangles_of{$l3}}, $#tris;
 }
 
 # http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect
@@ -122,24 +138,39 @@ for ($outer = 0; $outer < 100; $outer++) {
 		for ($i = 0; $i <= $#x; $i++) {
 			next unless defined($x[$i]);
 
+			@n = keys (%{$neighbor{$i}});
+			$herecount = $#n + 1;
+
+			next if $herecount == 0;
+
 			$xsum = 0;
 			$ysum = 0;
 			$count = 0;
 
 			for $k (keys (%{$neighbor{$i}})) {
-				$dmin = 9999999;
-				for $k2 (keys (%{$neighbor{$k}})) {
-					$xd = $x[$k] - $x[$k2];
-					$yd = $y[$k] - $y[$k2];
-					$d = sqrt($xd * $xd + $yd * $yd);
-					if ($d < $dmin) {
-						$dmin = $d;
+				if (1) {
+					$dmin = 9999999;
+					for $k2 (keys (%{$neighbor{$k}})) {
+						$xd = $x[$k] - $x[$k2];
+						$yd = $y[$k] - $y[$k2];
+						$d = sqrt($xd * $xd + $yd * $yd);
+						if ($d < $dmin) {
+							$dmin = $d;
+						}
 					}
-				}
 
-				$xsum += $x[$k] * $dmin;
-				$ysum += $y[$k] * $dmin;
-				$count += 1 * $dmin;
+					$xsum += $x[$k] * $dmin;
+					$ysum += $y[$k] * $dmin;
+					$count += 1 * $dmin;
+				} else {
+					@n = keys (%{$neighbor{$k}});
+					$therecount = $#n + 1;
+
+					$weight = $herecount / $therecount;
+					$xsum += $x[$k] * $weight;
+					$ysum += $y[$k] * $weight;
+					$count += $weight;
+				}
 			}
 
 			# print "$i: $x[$i],$y[$i] has $count ";
@@ -154,25 +185,17 @@ for ($outer = 0; $outer < 100; $outer++) {
 			while ($again) {
 				$again = 0;
 
-				OUTER:
-				for $k (keys (%{$neighbor{$i}})) {
-					for $k2 (keys (%{$neighbor{$i}})) {
-					# for ($k2 = 0; $k2 <= $#x; $k2++) {
-						next unless defined $x[$k2];
-
-						for $k3 (keys (%{$neighbor{$k2}})) {
-							if ($k3 != $i) {
-								@int = intersect($x[$i], $y[$i], $x[$k], $y[$k],
-									$x[$k2], $y[$k2], $x[$k3], $y[$k3]);
-
-								if ($#int >= 0) {
-									# print STDERR "intersects: $int[2], $int[3]: $x[$i],$y[$i], $x[$k],$y[$k] with $x[$k2],$y[$k2], $x[$k3],$y[$k3]\n";
-									$x[$i] = $wasx;
-									$y[$i] = $wasy;
-									last OUTER;
-								}
-							}
-						}
+				my @t = @{$triangles_of{$i}};
+				# print "at $i: could be affected: @t\n";
+				for my $t (@t) {
+					my $area = area(@{$tris[$t]});
+					# print "$t: area $area\n";
+					if ($area <= 0) {
+						# print STDERR "$i: $t: area $area\n";
+						
+						$x[$i] = $wasx;
+						$y[$i] = $wasy;
+						last;
 					}
 				}
 
