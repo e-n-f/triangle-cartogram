@@ -27,18 +27,18 @@ struct point {
 };
 
 struct hcmp {
-        bool operator()(const point &a, const point &b) {
-                return a.x < b.x;
-        }
+	bool operator()(const point &a, const point &b) {
+		return a.x < b.x;
+	}
 } hcmp;
 
 struct vcmp {
-        bool operator()(const point &a, const point &b) {
-                return a.y < b.y;
-        }
+	bool operator()(const point &a, const point &b) {
+		return a.y < b.y;
+	}
 } vcmp;
 
-void split(std::vector<point> points, double x1, double y1, double x2, double y2, int direction, std::vector<point> &original) {
+void split(std::vector<point> &points, double x1, double y1, double x2, double y2, int direction, std::vector<point> &original) {
 	if (points.size() < 1) {
 		return;
 	}
@@ -47,22 +47,35 @@ void split(std::vector<point> points, double x1, double y1, double x2, double y2
 		original[points[0].id].nx = (x1 + x2) / 2;
 		original[points[0].id].ny = (y1 + y2) / 2;
 
-		printf("%.6f %.6f 1 0 360 arc fill\n", (x1 + x2) / 2, (y1 + y2) / 2);
+		// printf("%.6f %.6f 1 0 360 arc fill\n", (x1 + x2) / 2, (y1 + y2) / 2);
 		return;
 	}
 
+	double mid;
+
 	if (direction == 0) {
 		std::sort(points.begin(), points.end(), hcmp);
+		mid = points[points.size() / 2].x;
 	} else {
 		std::sort(points.begin(), points.end(), vcmp);
+		mid = points[points.size() / 2].y;
 	}
 
 	std::vector<point> p1, p2;
-	for (size_t i = 0; i < points.size() / 2; i++) {
-		p1.push_back(points[i]);
-	}
-	for (size_t i = points.size() / 2; i < points.size(); i++) {
-		p2.push_back(points[i]);
+	for (size_t i = 0; i < points.size(); i++) {
+		if (direction == 0) {
+			if (points[i].x < mid) {
+				p1.push_back(points[i]);
+			} else {
+				p2.push_back(points[i]);
+			}
+		} else {
+			if (points[i].y < mid) {
+				p1.push_back(points[i]);
+			} else {
+				p2.push_back(points[i]);
+			}
+		}
 	}
 
 	if (direction == 0) {
@@ -140,9 +153,32 @@ int main() {
 		}
 	}
 
-	split(points2, 0, 0, 612, 612, 0, points);
+	split(points2, 0, 0, 612, 612, 1, points);
 
 	printf("0 setlinewidth\n");
+
+	for (size_t i = 0; i < tris.size(); i++) {
+		size_t n = tris[i].size();
+
+		double xm = 0, ym = 0;
+		for (size_t j = 0; j < tris[i].size(); j++) {
+			xm += points[tris[i][j]].nx;
+			ym += points[tris[i][j]].ny;
+		}
+		xm /= tris[i].size();
+		ym /= tris[i].size();
+
+		for (size_t j = 0; j < n + 1; j++) {
+			printf("%.6f %.6f %s ",
+			       (points[tris[i][j % n]].nx + xm) / 2,
+			       (points[tris[i][j % n]].ny + ym) / 2,
+			       j == 0 ? "moveto" : "lineto");
+		}
+
+		printf("stroke\n");
+	}
+
+#if 0
 	for (size_t i = 0; i < points.size(); i++) {
 		for (auto n = points[i].neighbors.begin(); n != points[i].neighbors.end(); ++n) {
 			printf("%.6f %.6f moveto %.6f %.6f lineto stroke\n",
@@ -150,4 +186,5 @@ int main() {
 				points[*n].nx, points[*n].ny);
 		}
 	}
+#endif
 }
