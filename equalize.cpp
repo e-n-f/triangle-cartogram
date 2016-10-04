@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 
-double area(std::vector<size_t> const &t, std::vector<double> const &x, std::vector<double> const &y) {
+double getarea(std::vector<size_t> const &t, std::vector<double> const &x, std::vector<double> const &y) {
 	size_t n = t.size();
 	double area = 0;
 	for (size_t i = 0; i < n; i++) {
@@ -72,5 +72,72 @@ int main() {
 		triangles_of[l1].push_back(tris.size() - 1);
 		triangles_of[l2].push_back(tris.size() - 1);
 		triangles_of[l3].push_back(tris.size() - 1);
+	}
+
+	for (size_t outer = 0; 1 || outer < 500; outer++) {
+		if (1) {
+			double minarea = 999999;
+			double maxarea = 0;
+
+			for (size_t i = 0; i < tris.size(); i++) {
+				double area = getarea(tris[i], x, y);
+				if (area > maxarea) {
+					maxarea = area;
+				}
+				if (area < minarea) {
+					minarea = area;
+				}
+			}
+
+			fprintf(stderr, "%lu: %.6f\n", outer, maxarea / minarea);
+		}
+
+		if (outer % 5 == 0) {
+			double xmax, xmin, ymax, ymin;
+			xmax = ymax = -999999;
+			xmin = ymin = 999999;
+
+			for (size_t i = 0; i < x.size(); i++) {
+				if (x[i] == 0) {
+					continue;
+				}
+
+				if (x[i] > xmax) {
+					xmax = x[i];
+				}
+				if (y[i] > ymax) {
+					ymax = y[i];
+				}
+				if (x[i] < xmin) {
+					xmin = x[i];
+				}
+				if (y[i] < ymin) {
+					ymin = y[i];
+				}
+			}
+
+			double scale;
+			if (xmax - xmin > ymax - ymin) {
+				scale = xmax - xmin;
+			} else {
+				scale = ymax - ymin;
+			}
+
+			printf("0 setlinewidth\n");
+			for (size_t i = 0; i < x.size(); i++) {
+				if (x[i] == 0) {
+					continue;
+				}
+
+				for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
+					printf("%.6f %.6f moveto %.6f %.6f lineto stroke\n",
+					       (x[i] - xmin) * 612 / scale,
+					       (y[i] - ymin) * 612 / scale,
+					       (x[*k] - xmin) * 612 / scale,
+					       (y[*k] - ymin) * 612 / scale);
+				}
+			}
+			printf("showpage\n");
+		}
 	}
 }
