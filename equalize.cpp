@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <vector>
 #include <map>
 #include <set>
@@ -138,6 +139,56 @@ int main() {
 				}
 			}
 			printf("showpage\n");
+		}
+
+		for (size_t i = 0; i < x.size(); i++) {
+			if (x[i] == 0) {
+				continue;
+			}
+			if (neighbor[i].size() == 0) {
+				continue;
+			}
+
+			double xsum = 0;
+			double ysum = 0;
+			double count = 0;
+
+			for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
+				double dmin = 9999999;
+				for (auto k2 = neighbor[*k].begin(); k2 != neighbor[*k].end(); ++k2) {
+					double xd = x[*k] - x[*k2];
+					double yd = y[*k] - y[*k2];
+					double d = sqrt(xd * xd + yd * yd);
+					if (d < dmin) {
+						dmin = d;
+					}
+				}
+
+				xsum += x[*k] * dmin;
+				ysum += y[*k] * dmin;
+				count += dmin;
+			}
+
+			double wasx = x[i];
+			double wasy = y[i];
+
+			x[i] = xsum / count;
+			y[i] = ysum / count;
+
+			bool again = true;
+			while (again) {
+				again = false;
+
+				for (auto t: triangles_of[i]) {
+					double area = getarea(tris[t], x, y);
+					if (area <= 0) {
+						x[i] = (wasx + x[i]) / 2;
+						y[i] = (wasy + y[i]) / 2;
+						again = 1;
+						break;
+					}
+				}
+			}
 		}
 	}
 }
