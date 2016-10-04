@@ -65,8 +65,7 @@ sub intersect {
 	return ();
 }
 
-for ($outer = 0; $outer < 100; $outer++) {
-	print STDERR "$outer  \r";
+for ($outer = 0; 1 || $outer < 500; $outer++) {
 	$xmax = $ymax = -999999;
 	$xmin = $ymin = 999999;
 	for ($i = 0; $i <= $#x; $i++) {
@@ -84,6 +83,20 @@ for ($outer = 0; $outer < 100; $outer++) {
 	}
 
 	if (1) {
+		$minarea = 99999999;
+		$maxarea = 0;
+
+		for ($i = 0; $i < $#tris; $i++) {
+			$area = area(@{$tris[$i]});
+			if ($area > $maxarea) { $maxarea = $area; }
+			if ($area < $minarea) { $minarea = $area; }
+		}
+
+		printf STDERR ("%d: %.6f\n", $outer, $maxarea / $minarea);
+	}
+
+	if ($outer % 5 == 0) {
+		print STDERR "$outer  \r";
 		print "0 setlinewidth\n";
 		for ($i = 0; $i <= $#x; $i++) {
 			next unless defined($x[$i]);
@@ -193,8 +206,9 @@ for ($outer = 0; $outer < 100; $outer++) {
 					if ($area <= 0) {
 						# print STDERR "$i: $t: area $area\n";
 						
-						$x[$i] = $wasx;
-						$y[$i] = $wasy;
+						$x[$i] = ($wasx + $x[$i]) / 2;
+						$y[$i] = ($wasy + $y[$i]) / 2;
+						$again = 1;
 						last;
 					}
 				}
