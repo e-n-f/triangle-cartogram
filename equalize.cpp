@@ -16,6 +16,49 @@ double getarea(std::vector<size_t> const &t, std::vector<double> const &x, std::
 	return area;
 }
 
+struct point {
+	double x;
+	double y;
+	point() {
+		x = y = 0;
+	}
+	point(double _x, double _y) {
+		x = _x;
+		y = _y;
+	}
+	bool operator<(const point &p) const {
+		if (y < p.y) {
+			return true;
+		}
+		if (y == p.y && x < p.x) {
+			return true;
+		}
+		return false;
+	}
+};
+
+struct edge {
+	size_t p1, p2;
+	edge(size_t _p1, size_t _p2) {
+		if (_p1 < _p2) {
+			p1 = _p1;
+			p2 = _p2;
+		} else {
+			p1 = _p2;
+			p2 = _p1;
+		}
+	}
+	bool operator<(const edge &e) const {
+		if (p1 < e.p1) {
+			return true;
+		}
+		if (p1 == e.p1 && p2 < e.p2) {
+			return true;
+		}
+		return false;
+	}
+};
+
 int main() {
 	char s[2000];
 	std::vector<double> x;
@@ -23,6 +66,8 @@ int main() {
 	std::vector<std::vector<size_t>> tris;
 	std::vector<std::vector<size_t>> triangles_of;
 	std::vector<std::set<size_t>> neighbor;
+	std::multiset<edge> edges;
+	std::vector<bool> on_edge;
 
 	while (fgets(s, 2000, stdin)) {
 		int l1, l2, l3;
@@ -48,6 +93,7 @@ int main() {
 			y.resize(max + 1);
 			neighbor.resize(max + 1);
 			triangles_of.resize(max + 1);
+			on_edge.resize(max + 1);
 		}
 
 		x[l1] = p1x;
@@ -56,6 +102,10 @@ int main() {
 		y[l2] = p2y;
 		x[l3] = p3x;
 		y[l3] = p3y;
+
+		edges.insert(edge(l1, l2));
+		edges.insert(edge(l2, l3));
+		edges.insert(edge(l3, l1));
 
 		neighbor[l1].insert(l2);
 		neighbor[l1].insert(l3);
@@ -73,6 +123,14 @@ int main() {
 		triangles_of[l1].push_back(tris.size() - 1);
 		triangles_of[l2].push_back(tris.size() - 1);
 		triangles_of[l3].push_back(tris.size() - 1);
+	}
+
+	for (auto e = edges.begin(); e != edges.end(); ++e) {
+		if (edges.count(*e) != 2) {
+			// printf("%lu %lu-%lu\n", edges.count(*e), e->p1, e->p2);
+			on_edge[e->p1] = true;
+			on_edge[e->p2] = true;
+		}
 	}
 
 	for (size_t outer = 0; 1 || outer < 500; outer++) {
@@ -148,6 +206,9 @@ int main() {
 			if (neighbor[i].size() == 0) {
 				continue;
 			}
+			if (on_edge[i]) {
+				continue;
+			}
 
 			double xsum = 0;
 			double ysum = 0;
@@ -179,7 +240,7 @@ int main() {
 			while (again) {
 				again = false;
 
-				for (auto t: triangles_of[i]) {
+				for (auto t : triangles_of[i]) {
 					double area = getarea(tris[t], x, y);
 					if (area <= 0) {
 						x[i] = (wasx + x[i]) / 2;
