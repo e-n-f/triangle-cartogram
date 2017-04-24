@@ -151,7 +151,7 @@ int main() {
 			fprintf(stderr, "%lu: %.6f\n", outer, maxarea / minarea);
 		}
 
-		if (outer % 5 == 0) {
+		if (1) {
 			double xmax, xmin, ymax, ymin;
 			xmax = ymax = -999999;
 			xmin = ymin = 999999;
@@ -182,24 +182,29 @@ int main() {
 				scale = ymax - ymin;
 			}
 
-			printf("0 setlinewidth\n");
+			FILE *f = fopen("out2.ps", "w");
+
+			fprintf(f, "0 setlinewidth\n");
 			for (size_t i = 0; i < x.size(); i++) {
 				if (x[i] == 0) {
 					continue;
 				}
 
 				for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
-					printf("%.6f %.6f moveto %.6f %.6f lineto stroke\n",
-					       (x[i] - xmin) * 612 / scale,
-					       (y[i] - ymin) * 612 / scale,
-					       (x[*k] - xmin) * 612 / scale,
-					       (y[*k] - ymin) * 612 / scale);
+					fprintf(f, "%.6f %.6f moveto %.6f %.6f lineto stroke\n",
+						(x[i] - xmin) * 612 / scale,
+						(y[i] - ymin) * 612 / scale,
+						(x[*k] - xmin) * 612 / scale,
+						(y[*k] - ymin) * 612 / scale);
 				}
 			}
-			printf("showpage\n");
+			fprintf(f, "showpage\n");
+			fclose(f);
+			rename("out2.ps", "out.ps");
 		}
 
 		for (size_t i = 0; i < x.size(); i++) {
+			fprintf(stderr, "%zu/%zu\r", i, x.size());
 			if (x[i] == 0) {
 				continue;
 			}
@@ -213,6 +218,8 @@ int main() {
 			double xsum = 0;
 			double ysum = 0;
 			double count = 0;
+
+			// Calculate centroid
 
 			for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
 				double dmin = 9999999;
@@ -236,6 +243,8 @@ int main() {
 			x[i] = xsum / count;
 			y[i] = ysum / count;
 
+			// If centroid causes a collision, back off toward the original location
+
 			bool again = true;
 			while (again) {
 				again = false;
@@ -248,6 +257,77 @@ int main() {
 						again = 1;
 						break;
 					}
+				}
+			}
+
+			// Calculate angles to neighbors
+
+			std::vector<std::pair<double, size_t>> angles;
+
+			for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
+				double nx = x[*k];
+				double ny = y[*k];
+
+				double ang = atan2(ny - y[i], nx - x[i]);
+				angles.push_back(std::pair<double, size_t>(ang, *k));
+			}
+
+			std::sort(angles.begin(), angles.end());
+
+			// Try to equalize angles
+
+			for (size_t j = 0; j < angles.size(); j++) {
+				if (on_edge[angles[j].second]) {
+					continue;
+				}
+
+				fprintf(stderr, "%zu/%zu: %zu/%zu\r", i, x.size(), j, angles.size());
+				double x1 = x[angles[(j + angles.size() - 1) % angles.size()].second];
+				double y1 = y[angles[(j + angles.size() - 1) % angles.size()].second];
+				double ang1 = atan2(y1 - y[i], x1 - x[i]);
+
+				double x2 = x[angles[(j + angles.size() + 1) % angles.size()].second];
+				double y2 = y[angles[(j + angles.size() + 1) % angles.size()].second];
+				double ang2 = atan2(y2 - y[i], x2 - x[i]);
+
+				double avg;
+				if (ang1 > ang2) {
+					avg = (ang2 + 2 * M_PI + ang1) / 2;
+				} else {
+					avg = (ang2 + ang1) / 2;
+				}
+
+#if 0
+				printf("%zu: %f and %f: %f   %f,%f to %f,%f and %f,%f  %zu and %zu\n", j, ang1, ang2, avg, x[i], y[i], x1, y1, x2, y2,
+					angles[(j + angles.size() - 1) % angles.size()].second, angles[(j + angles.size() + 1) % angles.size()].second);
+#endif
+
+				double xd = x[angles[j].second] - x[i];
+				double yd = y[angles[j].second] - y[i];
+				double d = sqrt(xd * xd + yd * yd);
+
+				double nx = x[i] + d * cos(avg);
+				double ny = y[i] + d * sin(avg);
+
+				double ox = x[angles[j].second];
+				double oy = y[angles[j].second];
+
+				x[angles[j].second] = nx;
+				y[angles[j].second] = ny;
+
+				bool failed = false;
+				for (auto t : triangles_of[angles[j].second]) {
+					double area = getarea(tris[t], x, y);
+					if (area <= 0) {
+						failed = true;
+						break;
+					}
+				}
+
+				if (failed) {
+					// printf("oops\n");
+					x[angles[j].second] = ox;
+					y[angles[j].second] = oy;
 				}
 			}
 		}
