@@ -59,15 +59,27 @@ struct edge {
 	}
 };
 
+std::vector<double> x;
+std::vector<double> y;
+std::vector<std::vector<size_t>> tris;
+std::vector<std::vector<size_t>> triangles_of;
+std::vector<std::set<size_t>> neighbor;
+std::multiset<edge> edges;
+std::vector<bool> on_edge;
+
+bool impossible(size_t i) {
+	for (auto t : triangles_of[i]) {
+		double area = getarea(tris[t], x, y);
+		if (area <= 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int main() {
 	char s[2000];
-	std::vector<double> x;
-	std::vector<double> y;
-	std::vector<std::vector<size_t>> tris;
-	std::vector<std::vector<size_t>> triangles_of;
-	std::vector<std::set<size_t>> neighbor;
-	std::multiset<edge> edges;
-	std::vector<bool> on_edge;
 
 	while (fgets(s, 2000, stdin)) {
 		int l1, l2, l3;
@@ -203,7 +215,58 @@ int main() {
 			rename("out2.ps", "out.ps");
 		}
 
+		// Find median existing edge length;
+
+		std::vector<double> lens;
+		for (auto e = edges.begin(); e != edges.end(); ++e) {
+			double x1 = x[e->p1];
+			double y1 = y[e->p1];
+
+			double x2 = x[e->p2];
+			double y2 = y[e->p2];
+
+			double dist = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+			lens.push_back(dist);
+		}
+
+		std::sort(lens.begin(), lens.end());
+		double median = lens[lens.size() / 2];
+
+		// Try to make all edges closer to that length
+
+		for (auto e = edges.begin(); e != edges.end(); ++e) {
+			double x1 = x[e->p1];
+			double y1 = y[e->p1];
+
+			double x2 = x[e->p2];
+			double y2 = y[e->p2];
+
+			double dist = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+
+			bool again = true;
+			while (again) {
+				again = false;
+
+				double mx = (x1 + x2) / 2;
+				double my = (y1 + y2) / 2;
+
+				x[e->p1] = mx + (median / dist) * (x1 - mx);
+				y[e->p1] = my + (median / dist) * (y1 - my);
+
+				x[e->p2] = mx + (median / dist) * (x2 - mx);
+				y[e->p2] = my + (median / dist) * (y2 - my);
+
+				// printf("move %f,%f to %f,%f  to %f,%f to %f,%f\n", x1, y1, x2, y2, x[e->p1], y[e->p1], x[e->p2], y[e->p2]);
+
+				if (impossible(e->p1) || impossible(e->p2)) {
+					dist = (dist + median) / 2;
+					again = true;
+				}
+			}
+		}
+
 		for (size_t i = 0; i < x.size(); i++) {
+#if 0
 			fprintf(stderr, "%zu/%zu\r", i, x.size());
 			if (x[i] == 0) {
 				continue;
@@ -330,6 +393,7 @@ int main() {
 					y[angles[j].second] = oy;
 				}
 			}
+#endif
 		}
 	}
 }
