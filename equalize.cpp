@@ -215,66 +215,13 @@ int main() {
 			rename("out2.ps", "out.ps");
 		}
 
-		// Find median existing edge length;
-
-		std::vector<double> lens;
-		for (auto e = edges.begin(); e != edges.end(); ++e) {
-			double x1 = x[e->p1];
-			double y1 = y[e->p1];
-
-			double x2 = x[e->p2];
-			double y2 = y[e->p2];
-
-			double dist = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-			lens.push_back(dist);
-		}
-
-		std::sort(lens.begin(), lens.end());
-		double median = lens[lens.size() / 2];
-
-		// Try to make all edges closer to that length
-
-		for (auto e = edges.begin(); e != edges.end(); ++e) {
-			double x1 = x[e->p1];
-			double y1 = y[e->p1];
-
-			double x2 = x[e->p2];
-			double y2 = y[e->p2];
-
-			double dist = sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-
-			bool again = true;
-			while (again) {
-				again = false;
-
-				double mx = (x1 + x2) / 2;
-				double my = (y1 + y2) / 2;
-
-				x[e->p1] = mx + (median / dist) * (x1 - mx);
-				y[e->p1] = my + (median / dist) * (y1 - my);
-
-				x[e->p2] = mx + (median / dist) * (x2 - mx);
-				y[e->p2] = my + (median / dist) * (y2 - my);
-
-				// printf("move %f,%f to %f,%f  to %f,%f to %f,%f\n", x1, y1, x2, y2, x[e->p1], y[e->p1], x[e->p2], y[e->p2]);
-
-				if (impossible(e->p1) || impossible(e->p2)) {
-					dist = (dist + median) / 2;
-					again = true;
-				}
-			}
-		}
 
 		for (size_t i = 0; i < x.size(); i++) {
-#if 0
-			fprintf(stderr, "%zu/%zu\r", i, x.size());
+#if 1
 			if (x[i] == 0) {
 				continue;
 			}
 			if (neighbor[i].size() == 0) {
-				continue;
-			}
-			if (on_edge[i]) {
 				continue;
 			}
 
@@ -323,76 +270,6 @@ int main() {
 				}
 			}
 
-			// Calculate angles to neighbors
-
-			std::vector<std::pair<double, size_t>> angles;
-
-			for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
-				double nx = x[*k];
-				double ny = y[*k];
-
-				double ang = atan2(ny - y[i], nx - x[i]);
-				angles.push_back(std::pair<double, size_t>(ang, *k));
-			}
-
-			std::sort(angles.begin(), angles.end());
-
-			// Try to equalize angles
-
-			for (size_t j = 0; j < angles.size(); j++) {
-				if (on_edge[angles[j].second]) {
-					continue;
-				}
-
-				fprintf(stderr, "%zu/%zu: %zu/%zu\r", i, x.size(), j, angles.size());
-				double x1 = x[angles[(j + angles.size() - 1) % angles.size()].second];
-				double y1 = y[angles[(j + angles.size() - 1) % angles.size()].second];
-				double ang1 = atan2(y1 - y[i], x1 - x[i]);
-
-				double x2 = x[angles[(j + angles.size() + 1) % angles.size()].second];
-				double y2 = y[angles[(j + angles.size() + 1) % angles.size()].second];
-				double ang2 = atan2(y2 - y[i], x2 - x[i]);
-
-				double avg;
-				if (ang1 > ang2) {
-					avg = (ang2 + 2 * M_PI + ang1) / 2;
-				} else {
-					avg = (ang2 + ang1) / 2;
-				}
-
-#if 0
-				printf("%zu: %f and %f: %f   %f,%f to %f,%f and %f,%f  %zu and %zu\n", j, ang1, ang2, avg, x[i], y[i], x1, y1, x2, y2,
-					angles[(j + angles.size() - 1) % angles.size()].second, angles[(j + angles.size() + 1) % angles.size()].second);
-#endif
-
-				double xd = x[angles[j].second] - x[i];
-				double yd = y[angles[j].second] - y[i];
-				double d = sqrt(xd * xd + yd * yd);
-
-				double nx = x[i] + d * cos(avg);
-				double ny = y[i] + d * sin(avg);
-
-				double ox = x[angles[j].second];
-				double oy = y[angles[j].second];
-
-				x[angles[j].second] = nx;
-				y[angles[j].second] = ny;
-
-				bool failed = false;
-				for (auto t : triangles_of[angles[j].second]) {
-					double area = getarea(tris[t], x, y);
-					if (area <= 0) {
-						failed = true;
-						break;
-					}
-				}
-
-				if (failed) {
-					// printf("oops\n");
-					x[angles[j].second] = ox;
-					y[angles[j].second] = oy;
-				}
-			}
 #endif
 		}
 	}
