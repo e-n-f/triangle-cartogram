@@ -202,6 +202,11 @@ int main() {
 					continue;
 				}
 
+				fprintf(f, "%.6f %.6f 1 0 360 arc fill\n",
+						(x[i] - xmin) * 612 / scale,
+						(y[i] - ymin) * 612 / scale);
+
+#if 0
 				for (auto k = neighbor[i].begin(); k != neighbor[i].end(); ++k) {
 					fprintf(f, "%.6f %.6f moveto %.6f %.6f lineto stroke\n",
 						(x[i] - xmin) * 612 / scale,
@@ -209,12 +214,14 @@ int main() {
 						(x[*k] - xmin) * 612 / scale,
 						(y[*k] - ymin) * 612 / scale);
 				}
+#endif
 			}
 			fprintf(f, "showpage\n");
 			fclose(f);
 			rename("out2.ps", "out.ps");
 		}
 
+#if 1
 		for (size_t i = 0; i < x.size(); i++) {
 			if (x[i] == 0) {
 				continue;
@@ -261,7 +268,7 @@ int main() {
 				for (auto t : triangles_of[i]) {
 					double area = getarea(tris[t], x, y);
 					if (area <= 0) {
-						if (tries++ > 10) {
+						if (tries++ > 20) {
 							x[i] = wasx;
 							y[i] = wasy;
 							break;
@@ -276,6 +283,7 @@ int main() {
 			}
 
 		}
+#endif
 
 		double sum = 0;
 		size_t count = 0;
@@ -317,10 +325,10 @@ int main() {
 					break;
 				}
 
-				want1 = (1 + want1) / 2;
+				want1 = want1 * .9 + 1 * .1;
 				tries++;
 
-				if (tries == 10) {
+				if (tries >= 20) {
 					x[e->p1] = xc + xd1;
 					y[e->p1] = yc + yd1;
 					break;
@@ -336,10 +344,10 @@ int main() {
 					break;
 				}
 
-				want2 = (1 + want2) / 2;
+				want2 = want2 * .9 + 1 * .1;
 				tries++;
 
-				if (tries == 10) {
+				if (tries >= 20) {
 					x[e->p2] = xc + xd2;
 					y[e->p2] = yc + yd2;
 					break;
