@@ -215,9 +215,7 @@ int main() {
 			rename("out2.ps", "out.ps");
 		}
 
-
 		for (size_t i = 0; i < x.size(); i++) {
-#if 1
 			if (x[i] == 0) {
 				continue;
 			}
@@ -256,21 +254,97 @@ int main() {
 			// If centroid causes a collision, back off toward the original location
 
 			bool again = true;
+			int tries = 0;
 			while (again) {
 				again = false;
 
 				for (auto t : triangles_of[i]) {
 					double area = getarea(tris[t], x, y);
 					if (area <= 0) {
-						x[i] = (wasx + x[i]) / 2;
-						y[i] = (wasy + y[i]) / 2;
+						if (tries++ > 10) {
+							x[i] = wasx;
+							y[i] = wasy;
+							break;
+						}
+
+						x[i] = wasx * .1 + x[i] * .9;
+						y[i] = wasy * .1 + y[i] * .9;
 						again = 1;
 						break;
 					}
 				}
 			}
 
-#endif
+		}
+
+		double sum = 0;
+		size_t count = 0;
+
+		for (auto e = edges.begin(); e != edges.end(); ++e) {
+			double xd = x[e->p1] - x[e->p2];
+			double yd = y[e->p1] - y[e->p2];
+			double d = sqrt(xd * xd + yd * yd);
+
+			sum += d;
+			count++;
+		}
+
+		double avg = sum / count;
+
+		for (auto e = edges.begin(); e != edges.end(); ++e) {
+			double xd = x[e->p1] - x[e->p2];
+			double yd = y[e->p1] - y[e->p2];
+			double d = sqrt(xd * xd + yd * yd);
+
+			double xc = (x[e->p1] + x[e->p2]) / 2;
+			double yc = (y[e->p1] + y[e->p2]) / 2;
+
+			double xd1 = x[e->p1] - xc;
+			double yd1 = y[e->p1] - yc;
+
+			double xd2 = x[e->p2] - xc;
+			double yd2 = y[e->p2] - yc;
+
+			double want1 = avg / d;
+			double want2 = avg / d;
+
+			size_t tries = 0;
+			while (1) {
+				x[e->p1] = xc + xd1 * want1;
+				y[e->p1] = yc + yd1 * want1;
+
+				if (!impossible(e->p1)) {
+					break;
+				}
+
+				want1 = (1 + want1) / 2;
+				tries++;
+
+				if (tries == 10) {
+					x[e->p1] = xc + xd1;
+					y[e->p1] = yc + yd1;
+					break;
+				}
+			}
+
+			tries = 0;
+			while (1) {
+				x[e->p2] = xc + xd2 * want2;
+				y[e->p2] = yc + yd2 * want2;
+
+				if (!impossible(e->p2)) {
+					break;
+				}
+
+				want2 = (1 + want2) / 2;
+				tries++;
+
+				if (tries == 10) {
+					x[e->p2] = xc + xd2;
+					y[e->p2] = yc + yd2;
+					break;
+				}
+			}
 		}
 	}
 }
